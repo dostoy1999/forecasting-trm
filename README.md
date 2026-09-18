@@ -9,22 +9,43 @@
 Este proyecto aplica un enfoque de forecasting por fases, siguiendo la estructura del libro *Forecasting: Principles and Practice, the Pythonic Way* (Hyndman et al., 2025). Cada fase construye sobre la anterior con una hipótesis explícita que se confirma o refuta con datos reales.
 
 ### Fase 1 — Análisis exploratorio (EDA)
+
 - Descarga de datos reales vía Yahoo Finance (`COP=X`), 2016–2026
 - Detección y filtrado de outliers en retornos diarios (cambios >15% diario = error de fuente)
 - Descomposición STL para separar tendencia, estacionalidad y residuos
-- **Hallazgo clave:** la estacionalidad mensual de la TRM es prácticamente inexistente (diferencia máxima entre meses: ~$200 COP). La varianza explicada está dominada por tendencia y residuos. Los residuos muestran heterocedasticidad creciente desde 2020.
+- **Hallazgo clave:** la estacionalidad mensual de la TRM es prácticamente inexistente (~$200 COP de diferencia entre meses). La varianza está dominada por tendencia y residuos. Los residuos muestran heterocedasticidad creciente desde 2020.
+
+![Serie TRM 2016-2026](outputs/01_serie_trm.png)
+![Distribución por año y mes](outputs/02_distribucion_trm.png)
+![Descomposición STL](outputs/03_descomposicion_stl.png)
+![Volatilidad diaria](outputs/04_retornos_trm.png)
+
+---
 
 ### Fase 2 — Modelos base (benchmark)
+
 - **División train/test:** entrenamiento 2016–2024, evaluación 2025–2026 (datos ya ocurridos)
 - Modelos evaluados: **Naive**, **Drift**, **ETS (AutoETS)**
 - **Hallazgo clave:** Naive y AutoETS convergieron a métricas idénticas (MAE: $435 COP, MAPE: 11.39%). AutoETS con alpha ≈ 1 es matemáticamente equivalente al Naive, lo que constituye evidencia inicial de que la TRM sigue un random walk.
 
+![Train vs Test](outputs/05_train_test_split.png)
+![Pronósticos modelos base](outputs/06_pronosticos_modelos_base.png)
+![Comparación de errores](outputs/07_comparacion_errores.png)
+![Error mensual por modelo](outputs/08_error_mensual.png)
+
+---
+
 ### Fase 3 — AutoARIMA
+
 - Análisis de ACF y PACF pre-modelado para proponer (p,d,q) antes de correr el algoritmo
 - **Hipótesis previa:** ARIMA(0,1,0) — basada en los hallazgos de la Fase 2
 - AutoARIMA evaluó exhaustivamente el espacio de modelos ARIMA posibles
 - **Hipótesis confirmada:** AutoARIMA seleccionó ARIMA(0,1,0), idéntico al Naive
-- Test de Ljung-Box sobre residuos: p-valor = 0.52 → no se rechaza hipótesis de ruido blanco → el modelo capturó toda la estructura autocorrelacional disponible en la serie
+- Test de Ljung-Box sobre residuos: p-valor = 0.52 → residuos sin autocorrelación → el modelo capturó toda la estructura disponible en la serie
+
+![ACF y PACF](outputs/09_acf_pacf.png)
+![AutoARIMA vs Naive](outputs/10_autoarima_vs_naive.png)
+![Diagnóstico de residuos](outputs/11_diagnostico_residuos.png)
 
 ---
 
@@ -47,7 +68,8 @@ Este proyecto aplica un enfoque de forecasting por fases, siguiendo la estructur
 
 > **La TRM colombiana se comporta como un random walk.**
 
-Esto fue confirmado por tres métodos independientes:
+Confirmado por tres métodos independientes:
+
 1. **Visual:** ACF de la serie original decae lentamente; ACF de la serie diferenciada (d=1) es ruido blanco
 2. **Benchmark:** AutoETS con alpha ≈ 1 converge al Naive
 3. **Estadístico:** AutoARIMA selecciona ARIMA(0,1,0); test de Ljung-Box confirma residuos sin autocorrelación
@@ -62,7 +84,7 @@ El resultado anterior **no implica que la TRM sea impredecible en absoluto** —
 
 - **ARIMAX / regresión con errores ARIMA:** incorporar variables exógenas como precio del petróleo (Brent), tasas de la Reserva Federal, índice EMBI Colombia, inflación diferencial
 - **Modelos GARCH:** la heterocedasticidad creciente en los residuos sugiere que la *volatilidad* de la TRM sí tiene estructura modelable, aunque el nivel no la tenga
-- **Modelos de Machine Learning con features macroeconómicas:** XGBoost o LightGBM con variables de política monetaria como predictores
+- **Modelos de ML con features macroeconómicas:** XGBoost o LightGBM con variables de política monetaria como predictores
 
 ---
 
@@ -87,6 +109,7 @@ forecasting-trm/
 ├── forecasting_trm_fase2.ipynb   # Naive, Drift, ETS
 ├── forecasting_trm_fase3.ipynb   # AutoARIMA, diagnóstico de residuos
 ├── README.md
+├── requirements.txt
 └── outputs/
     ├── 01_serie_trm.png
     ├── 02_distribucion_trm.png
